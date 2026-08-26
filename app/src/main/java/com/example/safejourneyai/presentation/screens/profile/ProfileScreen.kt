@@ -1,5 +1,9 @@
 package com.example.safejourneyai.presentation.screens.profile
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,7 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,8 +38,12 @@ import com.example.safejourneyai.presentation.theme.SOSRed
 @Composable
 fun ProfileScreen(
     userName: String,
+    userEmail: String = "traveler@safejourney.ai",
+    userPhone: String = "+91 98765 43210",
+    userPhotoUrl: String = "",
     savedDestinations: List<Destination>,
     downloadedPacks: List<Destination>,
+    onUpdateProfile: (name: String, email: String, phone: String, photoUrl: String) -> Unit = { _, _, _, _ -> },
     onNavigateDestination: (String) -> Unit,
     onNavigateDownloads: () -> Unit,
     onNavigateEmergencyContacts: () -> Unit,
@@ -45,6 +53,21 @@ fun ProfileScreen(
     onNavigateSettings: () -> Unit,
     onLogout: () -> Unit
 ) {
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf(userName) }
+    var editEmail by remember { mutableStateOf(userEmail) }
+    var editPhone by remember { mutableStateOf(userPhone) }
+    var currentPhotoUrl by remember { mutableStateOf(userPhotoUrl) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let {
+            currentPhotoUrl = it.toString()
+            onUpdateProfile(userName, userEmail, userPhone, currentPhotoUrl)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -82,56 +105,105 @@ fun ProfileScreen(
                         )
                         .padding(20.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.White,
-                            modifier = Modifier.size(68.dp),
-                            shadowElevation = 4.dp
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = if (userName.isNotEmpty()) userName.take(1).uppercase() else "T",
-                                    color = PrimaryBlue,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 28.sp
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .size(68.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White)
+                                    .clickable {
+                                        photoPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (currentPhotoUrl.isNotEmpty()) {
+                                    AsyncImage(
+                                        model = currentPhotoUrl,
+                                        contentDescription = "Profile Photo",
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Text(
+                                        text = if (userName.isNotEmpty()) userName.take(1).uppercase() else "T",
+                                        color = PrimaryBlue,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 28.sp
+                                    )
+                                }
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(22.dp),
+                                    shape = CircleShape,
+                                    color = PrimaryTeal
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Filled.CameraAlt,
+                                            contentDescription = "Edit Photo",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = userName, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.White)
+                                Text(text = userEmail, fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f), fontWeight = FontWeight.Medium)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color.White.copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            text = "${savedDestinations.size} Saved",
+                                            fontSize = 11.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color.White.copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            text = "${downloadedPacks.size} Offline Packs",
+                                            fontSize = 11.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = userName, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.White)
-                            Text(text = "Verified Traveler", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f), fontWeight = FontWeight.Medium)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = Color.White.copy(alpha = 0.2f)
-                                ) {
-                                    Text(
-                                        text = "${savedDestinations.size} Saved",
-                                        fontSize = 11.sp,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = Color.White.copy(alpha = 0.2f)
-                                ) {
-                                    Text(
-                                        text = "${downloadedPacks.size} Offline Packs",
-                                        fontSize = 11.sp,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Button(
+                            onClick = {
+                                editName = userName
+                                editEmail = userEmail
+                                editPhone = userPhone
+                                showEditDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.25f))
+                        ) {
+                            Icon(Icons.Filled.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Edit Profile Details", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -226,6 +298,56 @@ fun ProfileScreen(
                 Text("Log Out", fontWeight = FontWeight.Bold)
             }
         }
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Traveler Profile", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Full Name") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = editEmail,
+                        onValueChange = { editEmail = it },
+                        label = { Text("Email Address") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = editPhone,
+                        onValueChange = { editPhone = it },
+                        label = { Text("Phone Number") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editName.isNotBlank()) {
+                            onUpdateProfile(editName.trim(), editEmail.trim(), editPhone.trim(), currentPhotoUrl)
+                            showEditDialog = false
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Save Changes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

@@ -1,5 +1,7 @@
 package com.example.safejourneyai.presentation.screens.sos
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -15,8 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,7 @@ fun SOSScreen(
     onNavigateEmergencyContacts: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
     var isActivated by remember { mutableStateOf(false) }
     var isCountingDown by remember { mutableStateOf(false) }
     var countdownSeconds by remember { mutableIntStateOf(5) }
@@ -58,7 +61,7 @@ fun SOSScreen(
             }
             isActivated = true
             isCountingDown = false
-            statusMessage = "Emergency assistance activated. Location packaged for dispatch."
+            statusMessage = "Emergency assistance options active. Select an action below to proceed."
         }
     }
 
@@ -101,7 +104,7 @@ fun SOSScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "PRIVACY ASSURANCE: Your location will be shared ONLY NOW upon explicit SOS activation.",
+                        text = "PRIVACY ASSURANCE: Your location is shared ONLY NOW upon explicit SOS activation.",
                         fontSize = 12.sp,
                         color = SOSRed,
                         fontWeight = FontWeight.Bold,
@@ -117,7 +120,6 @@ fun SOSScreen(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier.size(220.dp)
                     ) {
-                        // Animated Pulse Ring Canvas
                         Canvas(modifier = Modifier.size((190 * pulseScale).dp)) {
                             drawCircle(
                                 color = SOSRed.copy(alpha = 0.2f),
@@ -182,7 +184,6 @@ fun SOSScreen(
                         }
                     }
                 } else {
-                    // Activated State Options
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = SafetyGreen.copy(alpha = 0.12f),
@@ -194,32 +195,32 @@ fun SOSScreen(
                         ) {
                             Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = SafetyGreen, modifier = Modifier.size(48.dp))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("EMERGENCY ACTIVATED", fontWeight = FontWeight.ExtraBold, color = SafetyGreen, fontSize = 18.sp)
+                            Text("EMERGENCY MODE READY", fontWeight = FontWeight.ExtraBold, color = SafetyGreen, fontSize = 18.sp)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(statusMessage, fontSize = 12.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
-                    Text("Emergency Actions Below", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Select an action (No automatic calls are made):", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Select Emergency Action (No automatic calls without confirmation):", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     SOSActionButton("Call Emergency 112", Icons.Filled.Phone, SOSRed) {
-                        statusMessage = "Opening dialer for 112 National Emergency..."
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+                        context.startActivity(intent)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    SOSActionButton("Share Live Location", Icons.Filled.Share, PrimaryBlue) {
-                        statusMessage = "Location link copied & shared with emergency contacts."
+                    SOSActionButton("Share SOS Location Link", Icons.Filled.Share, PrimaryBlue) {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "SafeJourneyAI SOS Alert: Emergency location broadcast initiated. Location: Jaipur (26.9124 N, 75.7873 E). Please assist.")
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Share Location Alert"))
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    SOSActionButton("Nearest Police Station", Icons.Filled.LocalPolice, PrimaryBlue) {
-                        onNavigateNearbyHelp()
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SOSActionButton("Nearest Hospital", Icons.Filled.LocalHospital, PrimaryBlue) {
+                    SOSActionButton("Nearest Help (Hospitals & Police)", Icons.Filled.LocalHospital, PrimaryBlue) {
                         onNavigateNearbyHelp()
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -229,7 +230,7 @@ fun SOSScreen(
                 }
             }
 
-            // Bottom Action
+            // Bottom Reset Button
             if (isActivated) {
                 OutlinedButton(
                     onClick = {

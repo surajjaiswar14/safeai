@@ -101,7 +101,11 @@ fun SafeJourneyNavGraph(
             composable(ScreenRoute.Login.route) {
                 LoginScreen(
                     onLoginSuccess = { name ->
-                        mainViewModel.loginUser(name)
+                        if (name.contains("Guest")) {
+                            mainViewModel.signInAsGuest()
+                        } else {
+                            mainViewModel.updateProfile(name, "traveler@safejourney.ai", "+91 98765 43210")
+                        }
                         navController.navigate(ScreenRoute.Home.route) {
                             popUpTo(ScreenRoute.Login.route) { inclusive = true }
                         }
@@ -115,7 +119,7 @@ fun SafeJourneyNavGraph(
             composable(ScreenRoute.Register.route) {
                 RegisterScreen(
                     onRegisterSuccess = { name ->
-                        mainViewModel.loginUser(name)
+                        mainViewModel.updateProfile(name, "traveler@safejourney.ai", "+91 98765 43210")
                         navController.navigate(ScreenRoute.Home.route) {
                             popUpTo(ScreenRoute.Register.route) { inclusive = true }
                         }
@@ -258,10 +262,17 @@ fun SafeJourneyNavGraph(
 
             // 17. Profile Screen
             composable(ScreenRoute.Profile.route) {
+                val localProfile by mainViewModel.localProfile.collectAsState()
                 ProfileScreen(
                     userName = userName,
+                    userEmail = localProfile?.email ?: "traveler@safejourney.ai",
+                    userPhone = localProfile?.phone ?: "+91 98765 43210",
+                    userPhotoUrl = localProfile?.avatar ?: "",
                     savedDestinations = savedDestinations,
                     downloadedPacks = offlinePacks,
+                    onUpdateProfile = { name, email, phone, photoUrl ->
+                        mainViewModel.updateProfile(name, email, phone, photoUrl)
+                    },
                     onNavigateDestination = { id -> navController.navigate(ScreenRoute.DestinationDetails.createRoute(id)) },
                     onNavigateDownloads = { navController.navigate(ScreenRoute.OfflineDownloads.route) },
                     onNavigateEmergencyContacts = { navController.navigate(ScreenRoute.EmergencyContacts.route) },

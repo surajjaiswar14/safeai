@@ -24,6 +24,21 @@ import androidx.compose.ui.unit.sp
 import com.example.safejourneyai.data.model.Destination
 import com.example.safejourneyai.presentation.components.*
 import com.example.safejourneyai.presentation.theme.*
+import androidx.compose.runtime.remember
+import java.util.Calendar
+
+@Composable
+fun rememberTimeBasedGreeting(): String {
+    return remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 5..11 -> "Good morning"
+            in 12..16 -> "Good afternoon"
+            in 17..20 -> "Good evening"
+            else -> "Good night"
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,8 +81,9 @@ fun HomeScreen(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
+                            val greeting = rememberTimeBasedGreeting()
                             Text(
-                                text = "Good morning, $userName",
+                                text = "$greeting, $userName",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp
