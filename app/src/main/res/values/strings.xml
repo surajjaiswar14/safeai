@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">SafeJourneyAI</string>
+    <string name="good_morning_traveler">Good morning, Traveler</string>
+    <string name="search_placeholder">Search a destination or ask a question</string>
+    <string name="location_status_off">Location sharing: Off unless SOS is triggered or Trip Mode is on.</string>
+    <string name="popular_destinations">Popular Destinations</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="nearby_help">Nearby Help</string>
+    <string name="checklist">Checklist</string>
+    <string name="offline_pack">Offline Pack</string>
+    <string name="emergency">Emergency</string>
+    <string name="trending_advisories">Trending Advisories</string>
+    <string name="ai_assistant">AI Assistant</string>
+    <string name="ask_anything_ai">Ask anything about your safety, local rules or emergency help.</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_sos">SOS</string>
+    <string name="nav_explore">Explore</string>
+    <string name="nav_downloads">Downloads</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Auth -->
+    <string name="welcome_back">Welcome back</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="sign_in">Sign in</string>
+    <string name="continue_google">Continue with Google</string>
+    <string name="continue_guest">Continue as guest</string>
+    <string name="create_account">Create account</string>
+    <string name="sign_up">Sign up</string>
+
+    <!-- General -->
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
+    <string name="download_safety_pack">Download Safety Pack</string>
+    <string name="ask_ai">Ask AI</string>
+    <string name="safety_score">Safety Score</string>
+    <string name="why_this_score">Why this score?</string>
+</resources>

@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">SafeJourneyAI</string>
+    <string name="good_morning_traveler">शुभ प्रभात, यात्री</string>
+    <string name="search_placeholder">गंतव्य खोजें या प्रश्न पूछें</string>
+    <string name="location_status_off">लोकेशन शेयरिंग: बंद है जब तक कि SOS ट्रिगर न हो या ट्रिप मोड ऑन न हो।</string>
+    <string name="popular_destinations">लोकप्रिय गंतव्य</string>
+    <string name="quick_actions">त्वरित कार्य</string>
+    <string name="nearby_help">आस-पास की सहायता</string>
+    <string name="checklist">सुरक्षा चेकलिस्ट</string>
+    <string name="offline_pack">ऑफ़लाइन पैक</string>
+    <string name="emergency">आपातकालीन</string>
+    <string name="trending_advisories">ट्रेंडिंग सलाह</string>
+    <string name="ai_assistant">एआई सहायक</string>
+    <string name="ask_anything_ai">अपनी सुरक्षा, स्थानीय नियमों या आपातकालीन सहायता के बारे में कुछ भी पूछें।</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">होम</string>
+    <string name="nav_sos">एसओएस</string>
+    <string name="nav_explore">एक्सप्लोर</string>
+    <string name="nav_downloads">डाउनलोड</string>
+    <string name="nav_profile">प्रोफाइल</string>
+
+    <!-- Auth -->
+    <string name="welcome_back">वापसी पर स्वागत है</string>
+    <string name="email">ईमेल</string>
+    <string name="password">पासवर्ड</string>
+    <string name="forgot_password">पासवर्ड भूल गए?</string>
+    <string name="sign_in">साइन इन करें</string>
+    <string name="continue_google">गूगल के साथ आगे बढ़ें</string>
+    <string name="continue_guest">अतिथि के रूप में जारी रखें</string>
+    <string name="create_account">खाता बनाएं</string>
+    <string name="sign_up">साइन अप करें</string>
+
+    <!-- General -->
+    <string name="save">सहेजें</string>
+    <string name="saved">सहेजा गया</string>
+    <string name="download_safety_pack">सुरक्षा पैक डाउनलोड करें</string>
+    <string name="ask_ai">AI से पूछें</string>
+    <string name="safety_score">सुरक्षा स्कोर</string>
+    <string name="why_this_score">यह स्कोर क्यों?</string>
+</resources>

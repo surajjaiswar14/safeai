@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">SafeJourneyAI</string>
+    <string name="good_morning_traveler">शुभ प्रभात, प्रवासी</string>
+    <string name="search_placeholder">गंतव्य शोधा किंवा प्रश्न विचारा</string>
+    <string name="location_status_off">स्थान शेअरिंग: SOS ट्रिगर होईपर्यंत किंवा ट्रिप मोड चालू असल्याशिवाय बंद.</string>
+    <string name="popular_destinations">लोकप्रिय ठिकाणे</string>
+    <string name="quick_actions">जलद कृती</string>
+    <string name="nearby_help">जवळपासाची मदत</string>
+    <string name="checklist">सुरक्षा चेकलिस्ट</string>
+    <string name="offline_pack">ऑफलाइन पॅक</string>
+    <string name="emergency">आणीबाणी</string>
+    <string name="trending_advisories">ट्रेंडिंग सूचना</string>
+    <string name="ai_assistant">एआय सहाय्यक</string>
+    <string name="ask_anything_ai">तुमची सुरक्षा, स्थानिक नियम किंवा आणीबाणीच्या मदतीबद्दल काहीही विचारा.</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">होम</string>
+    <string name="nav_sos">एसओएस</string>
+    <string name="nav_explore">एक्सप्लोर</string>
+    <string name="nav_downloads">डाउनलोड</string>
+    <string name="nav_profile">प्रोफाइल</string>
+
+    <!-- Auth -->
+    <string name="welcome_back">पुन्हा स्वागत आहे</string>
+    <string name="email">ईमेल</string>
+    <string name="password">पासवर्ड</string>
+    <string name="forgot_password">पासवर्ड विसरलात?</string>
+    <string name="sign_in">साइन इन करा</string>
+    <string name="continue_google">गूगलसह सुरू ठेवा</string>
+    <string name="continue_guest">अतिथी म्हणून सुरू ठेवा</string>
+    <string name="create_account">खाते तयार करा</string>
+    <string name="sign_up">साइन अप करा</string>
+
+    <!-- General -->
+    <string name="save">जतन करा</string>
+    <string name="saved">जतन केले</string>
+    <string name="download_safety_pack">सुरक्षा पॅक डाउनलोड करा</string>
+    <string name="ask_ai">AI ला विचारा</string>
+    <string name="safety_score">सुरक्षा स्कोर</string>
+    <string name="why_this_score">हा स्कोर का?</string>
+</resources>
