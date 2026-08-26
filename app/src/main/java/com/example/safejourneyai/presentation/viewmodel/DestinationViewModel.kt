@@ -30,25 +30,16 @@ class DestinationViewModel(application: Application) : AndroidViewModel(applicat
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val allDestinations: StateFlow<List<Destination>> = combine(
-        savedDestinations,
-        offlinePacks,
+        repository.getAllDestinations(),
         searchQuery,
         selectedCategory
-    ) { saved, offline, query, category ->
-        val savedIds = saved.map { it.id }.toSet()
-        val offlineIds = offline.map { it.id }.toSet()
-
-        repository.destinations.map { dest ->
-            dest.copy(
-                isSaved = savedIds.contains(dest.id),
-                isDownloaded = offlineIds.contains(dest.id)
-            )
-        }.filter { dest ->
+    ) { list, query, category ->
+        list.filter { dest ->
             val matchesQuery = query.isEmpty() || dest.name.contains(query, ignoreCase = true) || dest.state.contains(query, ignoreCase = true)
             val matchesCategory = category == "All" || dest.category.contains(category, ignoreCase = true)
             matchesQuery && matchesCategory
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), repository.destinations)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
@@ -77,6 +68,6 @@ class DestinationViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun getDestinationById(id: String): Destination? {
-        return repository.getDestinationById(id)
+        return allDestinations.value.find { it.id == id }
     }
 }

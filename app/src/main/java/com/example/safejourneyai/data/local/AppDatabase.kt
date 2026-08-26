@@ -4,32 +4,53 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.safejourneyai.data.local.entities.OfflinePackEntity
-import com.example.safejourneyai.data.local.entities.SavedDestinationEntity
+import androidx.room.TypeConverters
+import com.example.safejourneyai.data.local.entities.*
 
 @Database(
-    entities = [SavedDestinationEntity::class, OfflinePackEntity::class],
-    version = 1,
+    entities = [
+        DestinationEntity::class,
+        SavedDestinationEntity::class,
+        OfflinePackEntity::class,
+        EmergencyContactEntity::class,
+        EmergencyServiceEntity::class,
+        ChecklistItemEntity::class,
+        UserProfileEntity::class,
+        AdvisoryEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
-abstract class AppDatabase : RoomDatabase() {
+@TypeConverters(Converters::class)
+abstract class SafeJourneyDatabase : RoomDatabase() {
 
     abstract fun destinationDao(): DestinationDao
+    abstract fun savedDestinationDao(): SavedDestinationDao
+    abstract fun offlinePackDao(): OfflinePackDao
+    abstract fun emergencyContactDao(): EmergencyContactDao
+    abstract fun emergencyServiceDao(): EmergencyServiceDao
+    abstract fun safetyChecklistDao(): SafetyChecklistDao
+    abstract fun userProfileDao(): UserProfileDao
+    abstract fun advisoryDao(): AdvisoryDao
 
     companion object {
         @Volatile
-        private var INSTANCE: AppDatabase? = null
+        private var INSTANCE: SafeJourneyDatabase? = null
 
-        fun getDatabase(context: Context): AppDatabase {
+        fun getDatabase(context: Context): SafeJourneyDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    AppDatabase::class.java,
-                    "safejourney_database"
-                ).fallbackToDestructiveMigration().build()
+                    SafeJourneyDatabase::class.java,
+                    "safejourney.db"
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }
         }
     }
 }
+
+typealias AppDatabase = SafeJourneyDatabase
