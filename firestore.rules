@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profile data - only accessible by the owner
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Saved destinations - user specific
+    match /saved_destinations/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Emergency contacts - user specific
+    match /emergency_contacts/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Offline safety packs - user specific downloads
+    match /offline_packs/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Checklists - user specific
+    match /checklists/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Public destination catalog - readable by all, write restricted
+    match /destinations/{destinationId} {
+      allow read: if true;
+      allow write: if false; // Admin only
+    }
+
+    // Public advisories - readable by all, write restricted
+    match /advisories/{advisoryId} {
+      allow read: if true;
+      allow write: if false; // Admin only
+    }
+  }
+}
