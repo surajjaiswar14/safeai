@@ -128,9 +128,11 @@ class SafeJourneyRepositoryImpl(
         val isSaved = savedDestinationDao.isDestinationSaved(id)
         if (isSaved) {
             savedDestinationDao.unsaveDestination(id)
+            syncSavedDestinationToFirestore(id, isSaved = false)
             return false
         } else {
             savedDestinationDao.saveDestination(SavedDestinationEntity(destinationId = id))
+            syncSavedDestinationToFirestore(id, isSaved = true)
             return true
         }
     }
@@ -152,10 +154,15 @@ class SafeJourneyRepositoryImpl(
             nearbyHelpInformation = destination.nearbyHospitals.joinToString(", ")
         )
         offlinePackDao.insertPack(entity)
+        syncOfflinePackToFirestore(entity, isDeleted = false)
     }
 
     override suspend fun deleteOfflinePack(id: String) {
         offlinePackDao.deletePack(id)
+        val pack = offlinePackDao.getPackByDestinationId(id)
+        if (pack != null) {
+            syncOfflinePackToFirestore(pack, isDeleted = true)
+        }
     }
 
     override fun getEmergencyContacts(): Flow<List<EmergencyContactEntity>> {
@@ -164,14 +171,17 @@ class SafeJourneyRepositoryImpl(
 
     override suspend fun addEmergencyContact(contact: EmergencyContactEntity) {
         emergencyContactDao.insertContact(contact)
+        syncEmergencyContactToFirestore(contact, isDeleted = false)
     }
 
     override suspend fun updateEmergencyContact(contact: EmergencyContactEntity) {
         emergencyContactDao.updateContact(contact)
+        syncEmergencyContactToFirestore(contact, isDeleted = false)
     }
 
     override suspend fun deleteEmergencyContact(id: Long) {
         emergencyContactDao.deleteContact(id)
+        syncEmergencyContactToFirestore(EmergencyContactEntity(id = id, name = "", type = "", phoneNumber = "", description = ""), isDeleted = true)
     }
 
     override fun getEmergencyServices(type: String): Flow<List<EmergencyServiceEntity>> {
@@ -185,6 +195,7 @@ class SafeJourneyRepositoryImpl(
 
     override suspend fun updateChecklistItemCompletion(id: String, isCompleted: Boolean) {
         safetyChecklistDao.updateCompletion(id, isCompleted)
+        syncChecklistToFirestore(id, isCompleted)
     }
 
     override fun getUserProfile(): Flow<UserProfileEntity?> {
@@ -197,6 +208,110 @@ class SafeJourneyRepositoryImpl(
 
     override fun getAdvisories(): Flow<List<AdvisoryEntity>> {
         return advisoryDao.getAllAdvisories()
+    }
+
+    // --- Background Firestore Synchronization Helpers ---
+
+    private fun syncSavedDestinationToFirestore(destinationId: String, isSaved: Boolean) {
+        try {
+            val auth = com.example.safejourneyai.data.remote.FirebaseManager.auth
+            val firestore = com.example.safejourneyai.data.remote.FirebaseManager.firestore
+            val uid = auth?.currentUser?.uid ?: return
+            if (firestore == null) return
+
+            val docRef = firestore.collection("users").document(uid)
+                .collection("saved_destinations").document(destinationId)
+
+            if (isSaved) {
+                docRef.set(
+                    mapOf(
+                        "destinationId" to destinationId,
+                        "savedAt" to System.currentTimeMillis()
+                    )
+                )
+            } else {
+                docRef.delete()
+            }
+        } catch (e: Exception) {
+            // Ignore offline/network exceptions - Room SQLite holds local truth
+        }
+    }
+
+    private fun syncEmergencyContactToFirestore(contact: EmergencyContactEntity, isDeleted: Boolean) {
+        try {
+            val auth = com.example.safejourneyai.data.remote.FirebaseManager.auth
+            val firestore = com.example.safejourneyai.data.remote.FirebaseManager.firestore
+            val uid = auth?.currentUser?.uid ?: return
+            if (firestore == null) return
+
+            val docRef = firestore.collection("users").document(uid)
+                .collection("emergency_contacts").document(contact.id.toString())
+
+            if (isDeleted) {
+                docRef.delete()
+            } else {
+                docRef.set(
+                    mapOf(
+                        "id" to contact.id,
+                        "name" to contact.name,
+                        "type" to contact.type,
+                        "phoneNumber" to contact.phoneNumber,
+                        "description" to contact.description,
+                        "isDefault" to contact.isDefault
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            // Ignore offline exceptions
+        }
+    }
+
+    private fun syncOfflinePackToFirestore(pack: OfflinePackEntity, isDeleted: Boolean) {
+        try {
+            val auth = com.example.safejourneyai.data.remote.FirebaseManager.auth
+            val firestore = com.example.safejourneyai.data.remote.FirebaseManager.firestore
+            val uid = auth?.currentUser?.uid ?: return
+            if (firestore == null) return
+
+            val docRef = firestore.collection("users").document(uid)
+                .collection("offline_packs").document(pack.destinationId)
+
+            if (isDeleted) {
+                docRef.delete()
+            } else {
+                docRef.set(
+                    mapOf(
+                        "destinationId" to pack.destinationId,
+                        "name" to pack.name,
+                        "state" to pack.state,
+                        "downloadedAt" to pack.downloadedAt
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            // Ignore offline exceptions
+        }
+    }
+
+    private fun syncChecklistToFirestore(itemId: String, isCompleted: Boolean) {
+        try {
+            val auth = com.example.safejourneyai.data.remote.FirebaseManager.auth
+            val firestore = com.example.safejourneyai.data.remote.FirebaseManager.firestore
+            val uid = auth?.currentUser?.uid ?: return
+            if (firestore == null) return
+
+            firestore.collection("users").document(uid)
+                .collection("checklists").document(itemId)
+                .set(
+                    mapOf(
+                        "id" to itemId,
+                        "isCompleted" to isCompleted,
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+        } catch (e: Exception) {
+            // Ignore offline exceptions
+        }
     }
 
     private fun DestinationEntity.toDomainModel(isSaved: Boolean = false, isDownloaded: Boolean = false): Destination {
