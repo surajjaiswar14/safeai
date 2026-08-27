@@ -75,20 +75,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun signUpWithEmail(name: String, email: String, pass: String) {
-        viewModelScope.launch {
-            authRepository.signUpWithEmail(name, email, pass)
-            userSettingsRepository.setLoggedIn(true, name)
+    suspend fun signUpWithEmail(name: String, email: String, pass: String): Result<UserProfileEntity> {
+        val result = authRepository.signUpWithEmail(name, email, pass)
+        result.onSuccess {
+            userSettingsRepository.setLoggedIn(true, it.name)
         }
+        return result
     }
 
-    fun signInWithEmail(email: String, pass: String) {
-        viewModelScope.launch {
-            val result = authRepository.signInWithEmail(email, pass)
-            result.onSuccess {
-                userSettingsRepository.setLoggedIn(true, it.name)
-            }
+    suspend fun signInWithEmail(email: String, pass: String): Result<UserProfileEntity> {
+        val result = authRepository.signInWithEmail(email, pass)
+        result.onSuccess {
+            userSettingsRepository.setLoggedIn(true, it.name)
         }
+        return result
+    }
+
+    suspend fun sendPasswordReset(email: String): Result<Unit> {
+        return authRepository.sendPasswordReset(email)
     }
 
     fun signInAsGuest() {

@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.launch
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -99,13 +100,25 @@ fun SafeJourneyNavGraph(
 
             // 3. Login Screen
             composable(ScreenRoute.Login.route) {
+                val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
                 LoginScreen(
-                    onLoginSuccess = { name ->
-                        if (name.contains("Guest")) {
-                            mainViewModel.signInAsGuest()
-                        } else {
-                            mainViewModel.updateProfile(name, "traveler@safejourney.ai", "+91 98765 43210")
+                    onLoginSubmit = { email, pass, onError ->
+                        coroutineScope.launch {
+                            val result = mainViewModel.signInWithEmail(email, pass)
+                            result.fold(
+                                onSuccess = {
+                                    navController.navigate(ScreenRoute.Home.route) {
+                                        popUpTo(ScreenRoute.Login.route) { inclusive = true }
+                                    }
+                                },
+                                onFailure = { error ->
+                                    onError(error.localizedMessage ?: "Authentication failed. Please check your credentials.")
+                                }
+                            )
                         }
+                    },
+                    onGuestLogin = {
+                        mainViewModel.signInAsGuest()
                         navController.navigate(ScreenRoute.Home.route) {
                             popUpTo(ScreenRoute.Login.route) { inclusive = true }
                         }
@@ -117,11 +130,21 @@ fun SafeJourneyNavGraph(
 
             // 4. Register Screen
             composable(ScreenRoute.Register.route) {
+                val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
                 RegisterScreen(
-                    onRegisterSuccess = { name ->
-                        mainViewModel.updateProfile(name, "traveler@safejourney.ai", "+91 98765 43210")
-                        navController.navigate(ScreenRoute.Home.route) {
-                            popUpTo(ScreenRoute.Register.route) { inclusive = true }
+                    onRegisterSubmit = { name, email, pass, onError ->
+                        coroutineScope.launch {
+                            val result = mainViewModel.signUpWithEmail(name, email, pass)
+                            result.fold(
+                                onSuccess = {
+                                    navController.navigate(ScreenRoute.Home.route) {
+                                        popUpTo(ScreenRoute.Register.route) { inclusive = true }
+                                    }
+                                },
+                                onFailure = { error ->
+                                    onError(error.localizedMessage ?: "Registration failed. Please try again.")
+                                }
+                            )
                         }
                     },
                     onNavigateLogin = { navController.navigateUp() }
@@ -130,7 +153,14 @@ fun SafeJourneyNavGraph(
 
             // 5. Forgot Password Screen
             composable(ScreenRoute.ForgotPassword.route) {
+                val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
                 ForgotPasswordScreen(
+                    onSendResetLinkSubmit = { email, onResult ->
+                        coroutineScope.launch {
+                            val result = mainViewModel.sendPasswordReset(email)
+                            onResult(result)
+                        }
+                    },
                     onNavigateBack = { navController.navigateUp() }
                 )
             }

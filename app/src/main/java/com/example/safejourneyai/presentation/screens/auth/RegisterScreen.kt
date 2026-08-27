@@ -23,12 +23,14 @@ import com.example.safejourneyai.presentation.theme.PrimaryBlue
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: (String) -> Unit,
+    onRegisterSubmit: (name: String, email: String, pass: String, onError: (String) -> Unit) -> Unit,
     onNavigateLogin: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -51,14 +53,36 @@ fun RegisterScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Error message banner
+        if (errorMessage != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         OutlinedTextField(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = { 
+                name = it
+                errorMessage = null
+            },
             label = { Text("Full Name") },
             leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
             singleLine = true,
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp)
         )
@@ -67,10 +91,14 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { 
+                email = it
+                errorMessage = null
+            },
             label = { Text("Email Address") },
             leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
             singleLine = true,
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -80,10 +108,14 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
+            onValueChange = { 
+                password = it
+                errorMessage = null
+            },
+            label = { Text("Password (6+ chars)") },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             singleLine = true,
+            enabled = !isLoading,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -94,15 +126,37 @@ fun RegisterScreen(
 
         Button(
             onClick = {
-                onRegisterSuccess(name.ifEmpty { "Traveler" })
+                if (name.isBlank() || email.isBlank() || password.isBlank()) {
+                    errorMessage = "Please fill in all fields."
+                    return@Button
+                }
+                if (password.length < 6) {
+                    errorMessage = "Password must be at least 6 characters long."
+                    return@Button
+                }
+                isLoading = true
+                errorMessage = null
+                onRegisterSubmit(name.trim(), email.trim(), password) { errorMsg ->
+                    isLoading = false
+                    errorMessage = errorMsg
+                }
             },
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
         ) {
-            Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -113,7 +167,7 @@ fun RegisterScreen(
                 "Sign in",
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onNavigateLogin() }
+                modifier = Modifier.clickable(enabled = !isLoading) { onNavigateLogin() }
             )
         }
     }

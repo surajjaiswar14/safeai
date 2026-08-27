@@ -26,12 +26,15 @@ import com.example.safejourneyai.presentation.theme.PrimaryTeal
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (String) -> Unit,
+    onLoginSubmit: (email: String, pass: String, onError: (String) -> Unit) -> Unit,
+    onGuestLogin: () -> Unit,
     onNavigateRegister: () -> Unit,
     onNavigateForgotPassword: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -74,15 +77,37 @@ fun LoginScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Error message banner
+        if (errorMessage != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Email Field
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { 
+                email = it
+                errorMessage = null
+            },
             label = { Text("Email") },
             leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
             singleLine = true,
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -93,10 +118,14 @@ fun LoginScreen(
         // Password Field
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { 
+                password = it
+                errorMessage = null
+            },
             label = { Text("Password") },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             singleLine = true,
+            enabled = !isLoading,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -115,7 +144,7 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clickable { onNavigateForgotPassword() }
+                modifier = Modifier.clickable(enabled = !isLoading) { onNavigateForgotPassword() }
             )
         }
 
@@ -124,36 +153,41 @@ fun LoginScreen(
         // Sign In Button
         Button(
             onClick = {
-                val userName = if (email.contains("@")) email.substringBefore("@") else "Traveler"
-                onLoginSuccess(userName.ifEmpty { "Traveler" })
+                if (email.isBlank() || password.isBlank()) {
+                    errorMessage = "Please enter both email and password."
+                    return@Button
+                }
+                isLoading = true
+                errorMessage = null
+                onLoginSubmit(email.trim(), password) { errorMsg ->
+                    isLoading = false
+                    errorMessage = errorMsg
+                }
             },
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
         ) {
-            Text("Sign in", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Continue with Google Button
-        OutlinedButton(
-            onClick = { onLoginSuccess("Google Traveler") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp)
-        ) {
-            Text("Continue with Google", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Sign in", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // Continue as Guest Button
         TextButton(
-            onClick = { onLoginSuccess("Guest Traveler") }
+            onClick = onGuestLogin,
+            enabled = !isLoading
         ) {
             Text("Continue as guest", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
         }
@@ -167,7 +201,7 @@ fun LoginScreen(
                 "Create account",
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onNavigateRegister() }
+                modifier = Modifier.clickable(enabled = !isLoading) { onNavigateRegister() }
             )
         }
     }
