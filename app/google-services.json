@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "633971773051",
+    "project_id": "safejourneyai",
+    "storage_bucket": "safejourneyai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633971773051:android:40fdfb46cf36858d2b9cde",
+        "android_client_info": {
+          "package_name": "com.safejourneyai.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtnliaNCNNMrT0byWprQTjCXJu-hHgAPk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
