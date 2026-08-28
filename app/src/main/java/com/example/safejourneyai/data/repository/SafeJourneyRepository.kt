@@ -1,6 +1,7 @@
 package com.example.safejourneyai.data.repository
 
 import com.example.safejourneyai.data.local.SafeJourneyDatabase
+import com.example.safejourneyai.data.local.dao.*
 import com.example.safejourneyai.data.local.entities.*
 import com.example.safejourneyai.data.model.Destination
 import kotlinx.coroutines.flow.Flow

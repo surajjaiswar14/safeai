@@ -28,12 +28,6 @@ data class DestinationEntity(
     val isDownloaded: Boolean = false
 )
 
-@Entity(tableName = "saved_destinations")
-data class SavedDestinationEntity(
-    @PrimaryKey val destinationId: String,
-    val savedAt: Long = System.currentTimeMillis()
-)
-
 @Entity(tableName = "offline_packs")
 data class OfflinePackEntity(
     @PrimaryKey val destinationId: String,
@@ -51,16 +45,6 @@ data class OfflinePackEntity(
     val emergencyNumbers: String = "",
     val nearbyHelpInformation: String = "",
     val downloadedAt: Long = System.currentTimeMillis()
-)
-
-@Entity(tableName = "emergency_contacts")
-data class EmergencyContactEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    val type: String,
-    val phoneNumber: String,
-    val description: String,
-    val isDefault: Boolean = false
 )
 
 @Entity(tableName = "emergency_services")
@@ -84,26 +68,4 @@ data class ChecklistItemEntity(
     val title: String,
     val description: String,
     val isCompleted: Boolean = false
-)
-
-@Entity(tableName = "user_profile")
-data class UserProfileEntity(
-    @PrimaryKey val id: String = "current_user",
-    val name: String,
-    val email: String = "",
-    val phone: String = "",
-    val avatar: String = "",
-    val createdAt: Long = System.currentTimeMillis()
-)
-
-@Entity(tableName = "advisories")
-data class AdvisoryEntity(
-    @PrimaryKey val id: String,
-    val destinationId: String = "",
-    val title: String,
-    val description: String,
-    val severity: String, // INFO, WATCH, CAUTION, EMERGENCY
-    val category: String, // WEATHER, TRAVEL, SCAM, INFORMATION, EMERGENCY
-    val createdAt: Long = System.currentTimeMillis(),
-    val isRead: Boolean = false
 )

@@ -91,6 +91,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return result
     }
 
+    suspend fun signInWithGoogle(idToken: String): Result<UserProfileEntity> {
+        val result = authRepository.signInWithGoogle(idToken)
+        result.onSuccess {
+            userSettingsRepository.setLoggedIn(true, it.name)
+        }
+        return result
+    }
+
     suspend fun sendPasswordReset(email: String): Result<Unit> {
         return authRepository.sendPasswordReset(email)
     }

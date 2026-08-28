@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.example.safejourneyai.data.local.dao.*
 import com.example.safejourneyai.data.local.entities.*
 
 @Database(
@@ -16,13 +17,13 @@ import com.example.safejourneyai.data.local.entities.*
         EmergencyServiceEntity::class,
         ChecklistItemEntity::class,
         UserProfileEntity::class,
-        AdvisoryEntity::class
+        SafetyAdvisoryEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
-abstract class SafeJourneyDatabase : RoomDatabase() {
+abstract class AppDatabase : RoomDatabase() {
 
     abstract fun destinationDao(): DestinationDao
     abstract fun savedDestinationDao(): SavedDestinationDao
@@ -31,17 +32,18 @@ abstract class SafeJourneyDatabase : RoomDatabase() {
     abstract fun emergencyServiceDao(): EmergencyServiceDao
     abstract fun safetyChecklistDao(): SafetyChecklistDao
     abstract fun userProfileDao(): UserProfileDao
-    abstract fun advisoryDao(): AdvisoryDao
+    abstract fun safetyAdvisoryDao(): SafetyAdvisoryDao
+    fun advisoryDao(): SafetyAdvisoryDao = safetyAdvisoryDao()
 
     companion object {
         @Volatile
-        private var INSTANCE: SafeJourneyDatabase? = null
+        private var INSTANCE: AppDatabase? = null
 
-        fun getDatabase(context: Context): SafeJourneyDatabase {
+        fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    SafeJourneyDatabase::class.java,
+                    AppDatabase::class.java,
                     "safejourney.db"
                 )
                 .fallbackToDestructiveMigration()
@@ -53,4 +55,4 @@ abstract class SafeJourneyDatabase : RoomDatabase() {
     }
 }
 
-typealias AppDatabase = SafeJourneyDatabase
+typealias SafeJourneyDatabase = AppDatabase

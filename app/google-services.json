@@ -12,7 +12,20 @@
           "package_name": "com.safejourneyai.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "633971773051-icf54c6oni798o1dn9he1i1afa277kdr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safejourneyai.app",
+            "certificate_hash": "14524be134b6b8ee08e8256a60270ae0fad55bb9"
+          }
+        },
+        {
+          "client_id": "633971773051-naa701js5rkeqle3q4eoq6qbnoj34tni.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAtnliaNCNNMrT0byWprQTjCXJu-hHgAPk"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "633971773051-naa701js5rkeqle3q4eoq6qbnoj34tni.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

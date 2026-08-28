@@ -3,9 +3,14 @@ package com.example.safejourneyai.data.repository
 import com.example.safejourneyai.data.local.SafeJourneyDatabase
 import com.example.safejourneyai.data.local.entities.UserProfileEntity
 import com.example.safejourneyai.data.remote.FirebaseManager
+import com.example.safejourneyai.data.sync.DataSyncManager
+import com.example.safejourneyai.data.sync.DataSyncManagerImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 sealed class AuthState {
@@ -19,6 +24,7 @@ interface AuthRepository {
     val authState: StateFlow<AuthState>
     suspend fun signUpWithEmail(name: String, email: String, pass: String): Result<UserProfileEntity>
     suspend fun signInWithEmail(email: String, pass: String): Result<UserProfileEntity>
+    suspend fun signInWithGoogle(idToken: String): Result<UserProfileEntity>
     suspend fun sendPasswordReset(email: String): Result<Unit>
     suspend fun signInAsGuest(): UserProfileEntity
     suspend fun signOut()
@@ -27,7 +33,8 @@ interface AuthRepository {
 }
 
 class AuthRepositoryImpl(
-    private val db: SafeJourneyDatabase
+    private val db: SafeJourneyDatabase,
+    private val syncManager: DataSyncManager = DataSyncManagerImpl(db)
 ) : AuthRepository {
 
     private val userProfileDao = db.userProfileDao()
@@ -36,6 +43,18 @@ class AuthRepositoryImpl(
 
     init {
         checkCurrentAuthStatus()
+    }
+
+    private fun triggerBackgroundSync(userId: String) {
+        if (userId.isNotBlank() && userId != "guest_user" && userId != "local_user") {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    syncManager.syncAllUserData(userId)
+                } catch (e: Exception) {
+                    // Ignore sync errors
+                }
+            }
+        }
     }
 
     private fun checkCurrentAuthStatus() {
@@ -48,11 +67,12 @@ class AuthRepositoryImpl(
                 name = currentUser.displayName.takeIf { !it.isNullOrBlank() } ?: "Traveler",
                 email = currentUser.email ?: "",
                 phone = currentUser.phoneNumber ?: "",
-                avatar = currentUser.photoUrl?.toString() ?: ""
+                avatar = currentUser.photoUrl?.toString() ?: "",
+                userId = currentUser.uid
             )
             _authState.value = AuthState.Authenticated(profile)
+            triggerBackgroundSync(currentUser.uid)
         } else {
-            // Fallback to local profile or Unauthenticated
             _authState.value = AuthState.Unauthenticated
         }
     }
@@ -62,7 +82,6 @@ class AuthRepositoryImpl(
         val firestore = FirebaseManager.firestore
 
         if (auth == null) {
-            // Local offline sign up
             val profile = UserProfileEntity(
                 id = "local_user_${System.currentTimeMillis()}",
                 name = name,
@@ -76,14 +95,14 @@ class AuthRepositoryImpl(
         return try {
             val authResult = auth.createUserWithEmailAndPassword(email, pass).await()
             val user = authResult.user ?: throw IllegalStateException("User creation failed")
-            
+
             val profile = UserProfileEntity(
                 id = user.uid,
                 name = name,
-                email = email
+                email = email,
+                userId = user.uid
             )
 
-            // Save to Firestore
             firestore?.collection("users")?.document(user.uid)?.set(
                 mapOf(
                     "uid" to user.uid,
@@ -98,6 +117,7 @@ class AuthRepositoryImpl(
 
             userProfileDao.createProfile(profile)
             _authState.value = AuthState.Authenticated(profile)
+            triggerBackgroundSync(user.uid)
             Result.success(profile)
         } catch (e: Exception) {
             _authState.value = AuthState.Error(e.localizedMessage ?: "Sign up failed")
@@ -127,14 +147,67 @@ class AuthRepositoryImpl(
                 id = user.uid,
                 name = user.displayName.takeIf { !it.isNullOrBlank() } ?: "Traveler",
                 email = user.email ?: email,
-                avatar = user.photoUrl?.toString() ?: ""
+                avatar = user.photoUrl?.toString() ?: "",
+                userId = user.uid
             )
 
             userProfileDao.createProfile(profile)
             _authState.value = AuthState.Authenticated(profile)
+            triggerBackgroundSync(user.uid)
             Result.success(profile)
         } catch (e: Exception) {
             _authState.value = AuthState.Error(e.localizedMessage ?: "Sign in failed")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<UserProfileEntity> {
+        val auth = FirebaseManager.auth
+        val firestore = FirebaseManager.firestore
+
+        if (auth == null) {
+            val profile = UserProfileEntity(
+                id = "google_user_offline",
+                name = "Google Traveler",
+                email = "google@safejourney.ai"
+            )
+            userProfileDao.createProfile(profile)
+            _authState.value = AuthState.Authenticated(profile)
+            return Result.success(profile)
+        }
+
+        return try {
+            val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val user = authResult.user ?: throw IllegalStateException("Google sign in failed")
+
+            val profile = UserProfileEntity(
+                id = user.uid,
+                name = user.displayName.takeIf { !it.isNullOrBlank() } ?: "Traveler",
+                email = user.email ?: "",
+                phone = user.phoneNumber ?: "",
+                avatar = user.photoUrl?.toString() ?: "",
+                userId = user.uid
+            )
+
+            firestore?.collection("users")?.document(user.uid)?.set(
+                mapOf(
+                    "uid" to user.uid,
+                    "displayName" to profile.name,
+                    "email" to profile.email,
+                    "phone" to profile.phone,
+                    "photoUrl" to profile.avatar,
+                    "updatedAt" to System.currentTimeMillis()
+                ),
+                com.google.firebase.firestore.SetOptions.merge()
+            )?.await()
+
+            userProfileDao.createProfile(profile)
+            _authState.value = AuthState.Authenticated(profile)
+            triggerBackgroundSync(user.uid)
+            Result.success(profile)
+        } catch (e: Exception) {
+            _authState.value = AuthState.Error(e.localizedMessage ?: "Google sign in failed")
             Result.failure(e)
         }
     }
@@ -153,7 +226,8 @@ class AuthRepositoryImpl(
         val profile = UserProfileEntity(
             id = "guest_user",
             name = "Guest Traveler",
-            email = "guest@safejourney.ai"
+            email = "guest@safejourney.ai",
+            userId = "guest_user"
         )
         userProfileDao.createProfile(profile)
         _authState.value = AuthState.Authenticated(profile)
@@ -173,13 +247,13 @@ class AuthRepositoryImpl(
             name = name,
             email = email,
             phone = phone,
-            avatar = photoUrl.ifEmpty { current.avatar }
+            avatar = photoUrl.ifEmpty { current.avatar },
+            updatedAt = System.currentTimeMillis()
         )
 
         userProfileDao.createProfile(updated)
         _authState.value = AuthState.Authenticated(updated)
 
-        // Firestore sync
         val auth = FirebaseManager.auth
         val firestore = FirebaseManager.firestore
         if (auth?.currentUser != null && firestore != null) {

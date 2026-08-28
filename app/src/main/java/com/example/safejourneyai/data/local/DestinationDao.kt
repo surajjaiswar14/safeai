@@ -2,6 +2,7 @@ package com.example.safejourneyai.data.local
 
 import androidx.room.*
 import com.example.safejourneyai.data.local.entities.*
+import com.example.safejourneyai.data.local.dao.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -69,21 +70,6 @@ interface DestinationDao {
 }
 
 @Dao
-interface SavedDestinationDao {
-    @Query("SELECT * FROM saved_destinations ORDER BY savedAt DESC")
-    fun getAllSavedDestinations(): Flow<List<SavedDestinationEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun saveDestination(saved: SavedDestinationEntity)
-
-    @Query("DELETE FROM saved_destinations WHERE destinationId = :id")
-    suspend fun unsaveDestination(id: String)
-
-    @Query("SELECT EXISTS(SELECT 1 FROM saved_destinations WHERE destinationId = :id)")
-    suspend fun isDestinationSaved(id: String): Boolean
-}
-
-@Dao
 interface OfflinePackDao {
     @Query("SELECT * FROM offline_packs ORDER BY downloadedAt DESC")
     fun getAllPacks(): Flow<List<OfflinePackEntity>>
@@ -102,27 +88,6 @@ interface OfflinePackDao {
 
     @Query("UPDATE offline_packs SET status = :status WHERE destinationId = :destId")
     suspend fun updateDownloadStatus(destId: String, status: String)
-}
-
-@Dao
-interface EmergencyContactDao {
-    @Query("SELECT * FROM emergency_contacts ORDER BY isDefault DESC, name ASC")
-    fun getAllContacts(): Flow<List<EmergencyContactEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertContact(contact: EmergencyContactEntity)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(contacts: List<EmergencyContactEntity>)
-
-    @Update
-    suspend fun updateContact(contact: EmergencyContactEntity)
-
-    @Query("DELETE FROM emergency_contacts WHERE id = :id")
-    suspend fun deleteContact(id: Long)
-
-    @Query("SELECT COUNT(*) FROM emergency_contacts")
-    suspend fun getContactsCount(): Int
 }
 
 @Dao
@@ -171,31 +136,4 @@ interface SafetyChecklistDao {
 
     @Query("SELECT COUNT(*) FROM checklist_items")
     suspend fun getChecklistCount(): Int
-}
-
-@Dao
-interface UserProfileDao {
-    @Query("SELECT * FROM user_profile WHERE id = 'current_user' LIMIT 1")
-    fun getProfile(): Flow<UserProfileEntity?>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun createProfile(profile: UserProfileEntity)
-
-    @Update
-    suspend fun updateProfile(profile: UserProfileEntity)
-}
-
-@Dao
-interface AdvisoryDao {
-    @Query("SELECT * FROM advisories ORDER BY createdAt DESC")
-    fun getAllAdvisories(): Flow<List<AdvisoryEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAdvisories(advisories: List<AdvisoryEntity>)
-
-    @Query("UPDATE advisories SET isRead = 1 WHERE id = :id")
-    suspend fun markAsRead(id: String)
-
-    @Query("SELECT COUNT(*) FROM advisories")
-    suspend fun getAdvisoriesCount(): Int
 }

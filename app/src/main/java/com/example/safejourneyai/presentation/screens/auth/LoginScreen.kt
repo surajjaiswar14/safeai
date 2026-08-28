@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Shield
@@ -27,6 +28,7 @@ import com.example.safejourneyai.presentation.theme.PrimaryTeal
 @Composable
 fun LoginScreen(
     onLoginSubmit: (email: String, pass: String, onError: (String) -> Unit) -> Unit,
+    onGoogleSignInClick: (onError: (String) -> Unit) -> Unit = {},
     onGuestLogin: () -> Unit,
     onNavigateRegister: () -> Unit,
     onNavigateForgotPassword: () -> Unit
@@ -180,6 +182,35 @@ fun LoginScreen(
             } else {
                 Text("Sign in", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Continue with Google Button
+        OutlinedButton(
+            onClick = {
+                if (isLoading) return@OutlinedButton
+                isLoading = true
+                errorMessage = null
+                onGoogleSignInClick { errorMsg ->
+                    isLoading = false
+                    errorMessage = errorMsg
+                }
+            },
+            enabled = !isLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.AccountCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Continue with Google", fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(12.dp))

@@ -6,6 +6,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
@@ -101,6 +102,46 @@ fun SafeJourneyNavGraph(
             // 3. Login Screen
             composable(ScreenRoute.Login.route) {
                 val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+                val context = androidx.compose.ui.platform.LocalContext.current
+                var googleSignInErrorCallback by androidx.compose.runtime.remember {
+                    androidx.compose.runtime.mutableStateOf<((String) -> Unit)?>(null)
+                }
+
+                val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+                ) { result ->
+                    val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    try {
+                        val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+                        val idToken = account?.idToken
+                        if (idToken != null) {
+                            coroutineScope.launch {
+                                val signInResult = mainViewModel.signInWithGoogle(idToken)
+                                signInResult.fold(
+                                    onSuccess = {
+                                        navController.navigate(ScreenRoute.Home.route) {
+                                            popUpTo(ScreenRoute.Login.route) { inclusive = true }
+                                        }
+                                    },
+                                    onFailure = { error ->
+                                        googleSignInErrorCallback?.invoke(error.localizedMessage ?: "Google sign in failed.")
+                                    }
+                                )
+                            }
+                        } else {
+                            googleSignInErrorCallback?.invoke("Could not retrieve Google ID token.")
+                        }
+                    } catch (e: com.google.android.gms.common.api.ApiException) {
+                        if (e.statusCode == com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_CANCELLED) {
+                            googleSignInErrorCallback?.invoke("Google sign in was cancelled.")
+                        } else {
+                            googleSignInErrorCallback?.invoke("Google sign in failed (Code ${e.statusCode}: ${e.localizedMessage}).")
+                        }
+                    } catch (e: Exception) {
+                        googleSignInErrorCallback?.invoke(e.localizedMessage ?: "Google sign in failed.")
+                    }
+                }
+
                 LoginScreen(
                     onLoginSubmit = { email, pass, onError ->
                         coroutineScope.launch {
@@ -115,6 +156,78 @@ fun SafeJourneyNavGraph(
                                     onError(error.localizedMessage ?: "Authentication failed. Please check your credentials.")
                                 }
                             )
+                        }
+                    },
+                    onGoogleSignInClick = { onError ->
+                        googleSignInErrorCallback = onError
+                        val webClientId = try {
+                            context.getString(com.example.safejourneyai.R.string.default_web_client_id)
+                        } catch (e: Exception) {
+                            val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+                            if (resId != 0) {
+                                try { context.getString(resId) } catch (e: Exception) { "" }
+                            } else ""
+                        }
+
+                        if (webClientId.isBlank()) {
+                            onError("OAuth Web Client ID is missing in google-services.json. Please download the latest google-services.json from Firebase Console.")
+                            return@LoginScreen
+                        }
+
+                        val activity = context as? android.app.Activity
+                        if (activity == null) {
+                            onError("Context is not an Activity.")
+                            return@LoginScreen
+                        }
+
+                        val credentialManager = androidx.credentials.CredentialManager.create(context)
+                        val googleIdOption = com.google.android.libraries.identity.googleid.GetGoogleIdOption.Builder()
+                            .setFilterByAuthorizedAccounts(false)
+                            .setServerClientId(webClientId)
+                            .setAutoSelectEnabled(false)
+                            .build()
+
+                        val request = androidx.credentials.GetCredentialRequest.Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
+
+                        coroutineScope.launch {
+                            try {
+                                val result = credentialManager.getCredential(context = activity, request = request)
+                                val credential = result.credential
+                                if (credential is androidx.credentials.CustomCredential && credential.type == com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                    val googleIdTokenCredential = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data)
+                                    val idToken = googleIdTokenCredential.idToken
+                                    val signInResult = mainViewModel.signInWithGoogle(idToken)
+                                    signInResult.fold(
+                                        onSuccess = {
+                                            navController.navigate(ScreenRoute.Home.route) {
+                                                popUpTo(ScreenRoute.Login.route) { inclusive = true }
+                                            }
+                                        },
+                                        onFailure = { error ->
+                                            onError(error.localizedMessage ?: "Google sign in failed.")
+                                        }
+                                    )
+                                } else {
+                                    onError("Unsupported credential type received.")
+                                }
+                            } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                                onError("Google sign in was cancelled.")
+                            } catch (e: Exception) {
+                                try {
+                                    val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                                        com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
+                                    )
+                                        .requestIdToken(webClientId)
+                                        .requestEmail()
+                                        .build()
+                                    val googleSignInClient = com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(activity, gso)
+                                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                                } catch (fallbackError: Exception) {
+                                    onError(e.localizedMessage ?: "Google sign in failed.")
+                                }
+                            }
                         }
                     },
                     onGuestLogin = {
