@@ -13,6 +13,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.net.URL
+import java.net.HttpURLConnection
+import org.json.JSONObject
 import kotlin.coroutines.resume
 
 data class UserLocation(
@@ -90,33 +93,60 @@ class LocationRepositoryImpl(private val context: Context) : LocationRepository 
     }
 
     private fun reverseGeocode(lat: Double, lng: Double): UserLocation {
-        return try {
+        try {
             val geocoder = Geocoder(context, Locale.getDefault())
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                var result = UserLocation(lat, lng)
+                var syncCity: String? = null
+                var syncState: String? = null
+                val latch = java.util.concurrent.CountDownLatch(1)
                 geocoder.getFromLocation(lat, lng, 1) { addresses ->
                     if (addresses.isNotEmpty()) {
                         val addr = addresses[0]
-                        val city = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "Current Location"
-                        val state = addr.adminArea ?: ""
-                        result = UserLocation(lat, lng, city, state)
+                        syncCity = addr.locality ?: addr.subAdminArea ?: addr.adminArea
+                        syncState = addr.adminArea
                     }
+                    latch.countDown()
                 }
-                result
+                latch.await(2, java.util.concurrent.TimeUnit.SECONDS)
+                if (!syncCity.isNullOrBlank()) {
+                    return UserLocation(lat, lng, syncCity!!, syncState ?: "")
+                }
             } else {
                 @Suppress("DEPRECATION")
                 val addresses = geocoder.getFromLocation(lat, lng, 1)
                 if (!addresses.isNullOrEmpty()) {
                     val addr = addresses[0]
-                    val city = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "Current Location"
+                    val city = addr.locality ?: addr.subAdminArea ?: addr.adminArea
                     val state = addr.adminArea ?: ""
-                    UserLocation(lat, lng, city, state)
-                } else {
-                    UserLocation(lat, lng)
+                    if (!city.isNullOrBlank()) {
+                        return UserLocation(lat, lng, city, state)
+                    }
                 }
             }
         } catch (e: Exception) {
-            UserLocation(lat, lng)
+            // Fallthrough to HTTP reverse geocoding fallback
+        }
+
+        // Network reverse geocoding fallback for accuracy
+        return try {
+            val urlString = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$lat&longitude=$lng&localityLanguage=en"
+            val conn = (URL(urlString).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 3000
+                readTimeout = 3000
+            }
+            if (conn.responseCode == 200) {
+                val responseText = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(responseText)
+                val city = json.optString("city", json.optString("locality", json.optString("principalSubdivision", "Current Location")))
+                val state = json.optString("principalSubdivision", "")
+                val cleanCity = if (city.isNotBlank() && city != "null") city else "Current Location"
+                val cleanState = if (state.isNotBlank() && state != "null" && state != cleanCity) state else ""
+                UserLocation(lat, lng, cleanCity, cleanState)
+            } else {
+                UserLocation(lat, lng, "Current Location", "")
+            }
+        } catch (e: Exception) {
+            UserLocation(lat, lng, "Current Location", "")
         }
     }
 }

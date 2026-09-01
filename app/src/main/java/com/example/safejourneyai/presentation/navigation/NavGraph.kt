@@ -280,8 +280,10 @@ fun SafeJourneyNavGraph(
 
             // 6. Home Screen
             composable(ScreenRoute.Home.route) {
+                val localProfile by mainViewModel.localProfile.collectAsState()
                 HomeScreen(
                     userName = userName,
+                    userPhotoUrl = localProfile?.avatar ?: "",
                     tripModeEnabled = tripModeEnabled,
                     simulationModeEnabled = simulationModeEnabled,
                     simulationScenario = simulationScenario,
@@ -375,7 +377,9 @@ fun SafeJourneyNavGraph(
 
             // 13. Emergency Contacts Screen
             composable(ScreenRoute.EmergencyContacts.route) {
+                val localProfile by mainViewModel.localProfile.collectAsState()
                 EmergencyContactsScreen(
+                    currentUserId = localProfile?.userId ?: "",
                     onNavigateBack = {
                         if (!navController.popBackStack()) {
                             navController.navigate(ScreenRoute.Home.route)
@@ -403,7 +407,8 @@ fun SafeJourneyNavGraph(
                 OfflineDownloadsScreen(
                     offlinePacks = offlinePacks,
                     onOpenPack = { id -> navController.navigate(ScreenRoute.DestinationDetails.createRoute(id)) },
-                    onDeletePack = { id -> destinationViewModel.deleteOfflinePack(id) }
+                    onDeletePack = { id -> destinationViewModel.deleteOfflinePack(id) },
+                    onNavigateBack = { navController.navigateUp() }
                 )
             }
 
@@ -412,8 +417,8 @@ fun SafeJourneyNavGraph(
                 val localProfile by mainViewModel.localProfile.collectAsState()
                 ProfileScreen(
                     userName = userName,
-                    userEmail = localProfile?.email ?: "traveler@safejourney.ai",
-                    userPhone = localProfile?.phone ?: "+91 98765 43210",
+                    userEmail = localProfile?.email ?: "",
+                    userPhone = localProfile?.phone ?: "",
                     userPhotoUrl = localProfile?.avatar ?: "",
                     savedDestinations = savedDestinations,
                     downloadedPacks = offlinePacks,

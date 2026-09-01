@@ -1,5 +1,7 @@
 package com.example.safejourneyai.presentation.screens.contacts
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,39 +11,44 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.safejourneyai.data.model.EmergencyContact
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.safejourneyai.data.local.entities.EmergencyContactEntity
 import com.example.safejourneyai.presentation.theme.PrimaryBlue
+import com.example.safejourneyai.presentation.viewmodel.EmergencyContactViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmergencyContactsScreen(
-    onNavigateBack: () -> Unit
+    currentUserId: String = "",
+    onNavigateBack: () -> Unit,
+    contactViewModel: EmergencyContactViewModel = viewModel()
 ) {
-    var contacts by remember {
-        mutableStateOf(
-            listOf(
-                EmergencyContact("1", "Ramesh Kumar (Father)", "+91 98765 43210", "Parent"),
-                EmergencyContact("2", "Priya Sharma (Sister)", "+91 98123 45678", "Sibling"),
-                EmergencyContact("3", "Vikram Singh (Guide)", "+91 94111 22334", "Local Guide")
-            )
-        )
+    val context = LocalContext.current
+    val contacts by contactViewModel.contacts.collectAsState()
+
+    LaunchedEffect(currentUserId) {
+        contactViewModel.setUserId(currentUserId)
     }
 
     var showAddDialog by remember { mutableStateOf(false) }
-    var newName by remember { mutableStateOf("") }
-    var newPhone by remember { mutableStateOf("") }
-    var newRelation by remember { mutableStateOf("") }
+    var editingContact by remember { mutableStateOf<EmergencyContactEntity?>(null) }
+
+    var nameInput by remember { mutableStateOf("") }
+    var phoneInput by remember { mutableStateOf("") }
+    var relationInput by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -56,7 +63,13 @@ fun EmergencyContactsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddDialog = true },
+                onClick = {
+                    nameInput = ""
+                    phoneInput = ""
+                    relationInput = ""
+                    editingContact = null
+                    showAddDialog = true
+                },
                 containerColor = PrimaryBlue,
                 shape = CircleShape
             ) {
@@ -87,36 +100,85 @@ fun EmergencyContactsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(contacts) { contact ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+            if (contacts.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Filled.ContactPhone,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "No emergency contacts added yet.",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Tap '+' below to add your family or emergency contact.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(contacts, key = { it.id }) { contact ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(text = contact.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                                Text(text = contact.phone, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                                Text(text = "Relation: ${contact.relationship}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Row {
-                                IconButton(onClick = { /* Dial call */ }) {
-                                    Icon(Icons.Filled.Phone, contentDescription = "Call", tint = MaterialTheme.colorScheme.primary)
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = contact.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(text = contact.phoneNumber, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                    Text(text = "Relation: ${contact.type}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                IconButton(
-                                    onClick = {
-                                        contacts = contacts.filter { it.id != contact.id }
+                                Row {
+                                    IconButton(
+                                        onClick = {
+                                            val cleaned = contact.phoneNumber.replace(Regex("[^0-9+]"), "")
+                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleaned"))
+                                            context.startActivity(intent)
+                                        }
+                                    ) {
+                                        Icon(Icons.Filled.Phone, contentDescription = "Call", tint = MaterialTheme.colorScheme.primary)
                                     }
-                                ) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    IconButton(
+                                        onClick = {
+                                            editingContact = contact
+                                            nameInput = contact.name
+                                            phoneInput = contact.phoneNumber
+                                            relationInput = contact.type
+                                            showAddDialog = true
+                                        }
+                                    ) {
+                                        Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            contactViewModel.deleteContact(contact.id)
+                                        }
+                                    ) {
+                                        Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
                             }
                         }
@@ -129,27 +191,32 @@ fun EmergencyContactsScreen(
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Add Emergency Contact", fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    text = if (editingContact != null) "Edit Emergency Contact" else "Add Emergency Contact",
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
-                        value = newName,
-                        onValueChange = { newName = it },
-                        label = { Text("Name") },
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Contact Name") },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
-                        value = newPhone,
-                        onValueChange = { newPhone = it },
+                        value = phoneInput,
+                        onValueChange = { phoneInput = it },
                         label = { Text("Phone Number") },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
-                        value = newRelation,
-                        onValueChange = { newRelation = it },
-                        label = { Text("Relationship") },
+                        value = relationInput,
+                        onValueChange = { relationInput = it },
+                        label = { Text("Relationship (e.g. Parent, Sibling)") },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -158,22 +225,27 @@ fun EmergencyContactsScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (newName.isNotBlank() && newPhone.isNotBlank()) {
-                            contacts = contacts + EmergencyContact(
-                                id = System.currentTimeMillis().toString(),
-                                name = newName,
-                                phone = newPhone,
-                                relationship = newRelation.ifEmpty { "Friend" }
-                            )
-                            newName = ""
-                            newPhone = ""
-                            newRelation = ""
+                        if (nameInput.isNotBlank() && phoneInput.isNotBlank()) {
+                            if (editingContact != null) {
+                                contactViewModel.updateContact(
+                                    id = editingContact!!.id,
+                                    name = nameInput,
+                                    phone = phoneInput,
+                                    relationship = relationInput
+                                )
+                            } else {
+                                contactViewModel.addContact(
+                                    name = nameInput,
+                                    phone = phoneInput,
+                                    relationship = relationInput
+                                )
+                            }
                             showAddDialog = false
                         }
                     },
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Save Contact")
+                    Text(if (editingContact != null) "Update Contact" else "Save Contact")
                 }
             },
             dismissButton = {

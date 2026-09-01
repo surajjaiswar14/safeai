@@ -38,8 +38,8 @@ import com.example.safejourneyai.presentation.theme.SOSRed
 @Composable
 fun ProfileScreen(
     userName: String,
-    userEmail: String = "traveler@safejourney.ai",
-    userPhone: String = "+91 98765 43210",
+    userEmail: String = "",
+    userPhone: String = "",
     userPhotoUrl: String = "",
     savedDestinations: List<Destination>,
     downloadedPacks: List<Destination>,
@@ -54,10 +54,10 @@ fun ProfileScreen(
     onLogout: () -> Unit
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
-    var editName by remember { mutableStateOf(userName) }
-    var editEmail by remember { mutableStateOf(userEmail) }
-    var editPhone by remember { mutableStateOf(userPhone) }
-    var currentPhotoUrl by remember { mutableStateOf(userPhotoUrl) }
+    var editName by remember(userName) { mutableStateOf(userName) }
+    var editEmail by remember(userEmail) { mutableStateOf(userEmail) }
+    var editPhone by remember(userPhone) { mutableStateOf(userPhone) }
+    var currentPhotoUrl by remember(userPhotoUrl) { mutableStateOf(userPhotoUrl) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()

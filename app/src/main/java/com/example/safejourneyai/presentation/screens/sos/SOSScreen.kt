@@ -227,15 +227,81 @@ fun SOSScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    Text("Select Emergency Action (No automatic calls without confirmation):", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                    Text("Select Emergency Action or Helpline (No automatic calls without confirmation):", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    SOSActionButton("Call Emergency 112", Icons.Filled.Phone, SOSRed) {
+                    SOSActionButton("Call National Emergency 112", Icons.Filled.Phone, SOSRed) {
                         val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
                         context.startActivity(intent)
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:100"))) },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SOSRed.copy(alpha = 0.9f))
+                        ) {
+                            Icon(Icons.Filled.LocalPolice, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Police 100", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:101"))) },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SOSRed.copy(alpha = 0.9f))
+                        ) {
+                            Icon(Icons.Filled.LocalFireDepartment, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Fire 101", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:102"))) },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SOSRed.copy(alpha = 0.9f))
+                        ) {
+                            Icon(Icons.Filled.LocalHospital, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Ambulance 102", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:1091"))) },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Icon(Icons.Filled.Shield, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Women 1091", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:1363"))) },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Icon(Icons.Filled.Info, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Tourist 1363", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
                     SOSActionButton("Share Live SOS Location Link", Icons.Filled.Share, PrimaryBlue) {
                         val loc = currentLocation
                         val timeStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
@@ -250,11 +316,11 @@ fun SOSScreen(
                         }
                         context.startActivity(Intent.createChooser(shareIntent, "Share Live Location Alert"))
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     SOSActionButton("Nearest Help (Hospitals & Police)", Icons.Filled.LocalHospital, PrimaryBlue) {
                         onNavigateNearbyHelp()
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     SOSActionButton("My Emergency Contacts", Icons.Filled.ContactPhone, PrimaryBlue) {
                         onNavigateEmergencyContacts()
                     }

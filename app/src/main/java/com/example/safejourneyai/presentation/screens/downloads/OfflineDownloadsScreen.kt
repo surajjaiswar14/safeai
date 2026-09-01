@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FolderZip
@@ -34,7 +35,8 @@ import com.example.safejourneyai.presentation.theme.SafetyGreen
 fun OfflineDownloadsScreen(
     offlinePacks: List<Destination>,
     onOpenPack: (String) -> Unit,
-    onDeletePack: (String) -> Unit
+    onDeletePack: (String) -> Unit,
+    onNavigateBack: (() -> Unit)? = null
 ) {
     var packToDelete by remember { mutableStateOf<Destination?>(null) }
     val totalStorageKb = offlinePacks.size * 450
@@ -42,7 +44,14 @@ fun OfflineDownloadsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Offline Safety Packs", fontWeight = FontWeight.Bold) }
+                title = { Text("Offline Safety Packs", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    if (onNavigateBack != null) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                }
             )
         }
     ) { innerPadding ->

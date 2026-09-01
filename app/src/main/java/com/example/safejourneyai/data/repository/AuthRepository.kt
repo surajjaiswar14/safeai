@@ -61,19 +61,31 @@ class AuthRepositoryImpl(
         val firebaseAuth = FirebaseManager.auth
         val currentUser = firebaseAuth?.currentUser
 
-        if (currentUser != null) {
-            val profile = UserProfileEntity(
-                id = currentUser.uid,
-                name = currentUser.displayName.takeIf { !it.isNullOrBlank() } ?: "Traveler",
-                email = currentUser.email ?: "",
-                phone = currentUser.phoneNumber ?: "",
-                avatar = currentUser.photoUrl?.toString() ?: "",
-                userId = currentUser.uid
-            )
-            _authState.value = AuthState.Authenticated(profile)
-            triggerBackgroundSync(currentUser.uid)
-        } else {
-            _authState.value = AuthState.Unauthenticated
+        CoroutineScope(Dispatchers.IO).launch {
+            if (currentUser != null) {
+                val existing = userProfileDao.getProfileSync()
+                val profile = UserProfileEntity(
+                    id = "current_user",
+                    name = existing?.name?.takeIf { it.isNotBlank() }
+                        ?: currentUser.displayName.takeIf { !it.isNullOrBlank() }
+                        ?: currentUser.email?.substringBefore("@")
+                        ?: "Traveler",
+                    email = existing?.email?.takeIf { it.isNotBlank() } ?: currentUser.email ?: "",
+                    phone = existing?.phone ?: currentUser.phoneNumber ?: "",
+                    avatar = existing?.avatar?.takeIf { it.isNotBlank() } ?: currentUser.photoUrl?.toString() ?: "",
+                    userId = currentUser.uid
+                )
+                userProfileDao.createProfile(profile)
+                _authState.value = AuthState.Authenticated(profile)
+                triggerBackgroundSync(currentUser.uid)
+            } else {
+                val existing = userProfileDao.getProfileSync()
+                if (existing != null && existing.id != "guest_user") {
+                    _authState.value = AuthState.Authenticated(existing)
+                } else {
+                    _authState.value = AuthState.Unauthenticated
+                }
+            }
         }
     }
 
@@ -83,9 +95,12 @@ class AuthRepositoryImpl(
 
         if (auth == null) {
             val profile = UserProfileEntity(
-                id = "local_user_${System.currentTimeMillis()}",
+                id = "current_user",
                 name = name,
-                email = email
+                email = email,
+                phone = "",
+                avatar = "",
+                userId = "local_user_${System.currentTimeMillis()}"
             )
             userProfileDao.createProfile(profile)
             _authState.value = AuthState.Authenticated(profile)
@@ -97,9 +112,11 @@ class AuthRepositoryImpl(
             val user = authResult.user ?: throw IllegalStateException("User creation failed")
 
             val profile = UserProfileEntity(
-                id = user.uid,
+                id = "current_user",
                 name = name,
                 email = email,
+                phone = "",
+                avatar = "",
                 userId = user.uid
             )
 
@@ -129,10 +146,13 @@ class AuthRepositoryImpl(
         val auth = FirebaseManager.auth
 
         if (auth == null) {
+            val existing = userProfileDao.getProfileSync()
             val profile = UserProfileEntity(
-                id = "local_user",
-                name = "Traveler",
-                email = email
+                id = "current_user",
+                name = existing?.name?.takeIf { it.isNotBlank() } ?: email.substringBefore("@"),
+                email = email,
+                phone = existing?.phone ?: "",
+                avatar = existing?.avatar ?: ""
             )
             userProfileDao.createProfile(profile)
             _authState.value = AuthState.Authenticated(profile)
@@ -143,11 +163,15 @@ class AuthRepositoryImpl(
             val authResult = auth.signInWithEmailAndPassword(email, pass).await()
             val user = authResult.user ?: throw IllegalStateException("Sign in failed")
 
+            val existing = userProfileDao.getProfileSync()
             val profile = UserProfileEntity(
-                id = user.uid,
-                name = user.displayName.takeIf { !it.isNullOrBlank() } ?: "Traveler",
+                id = "current_user",
+                name = existing?.name?.takeIf { it.isNotBlank() }
+                    ?: user.displayName.takeIf { !it.isNullOrBlank() }
+                    ?: email.substringBefore("@"),
                 email = user.email ?: email,
-                avatar = user.photoUrl?.toString() ?: "",
+                phone = existing?.phone ?: user.phoneNumber ?: "",
+                avatar = existing?.avatar?.takeIf { it.isNotBlank() } ?: user.photoUrl?.toString() ?: "",
                 userId = user.uid
             )
 
@@ -167,9 +191,11 @@ class AuthRepositoryImpl(
 
         if (auth == null) {
             val profile = UserProfileEntity(
-                id = "google_user_offline",
+                id = "current_user",
                 name = "Google Traveler",
-                email = "google@safejourney.ai"
+                email = "",
+                phone = "",
+                avatar = ""
             )
             userProfileDao.createProfile(profile)
             _authState.value = AuthState.Authenticated(profile)
@@ -181,12 +207,15 @@ class AuthRepositoryImpl(
             val authResult = auth.signInWithCredential(credential).await()
             val user = authResult.user ?: throw IllegalStateException("Google sign in failed")
 
+            val existing = userProfileDao.getProfileSync()
             val profile = UserProfileEntity(
-                id = user.uid,
-                name = user.displayName.takeIf { !it.isNullOrBlank() } ?: "Traveler",
+                id = "current_user",
+                name = existing?.name?.takeIf { it.isNotBlank() }
+                    ?: user.displayName.takeIf { !it.isNullOrBlank() }
+                    ?: "Traveler",
                 email = user.email ?: "",
-                phone = user.phoneNumber ?: "",
-                avatar = user.photoUrl?.toString() ?: "",
+                phone = existing?.phone ?: user.phoneNumber ?: "",
+                avatar = existing?.avatar?.takeIf { it.isNotBlank() } ?: user.photoUrl?.toString() ?: "",
                 userId = user.uid
             )
 
@@ -224,9 +253,11 @@ class AuthRepositoryImpl(
 
     override suspend fun signInAsGuest(): UserProfileEntity {
         val profile = UserProfileEntity(
-            id = "guest_user",
+            id = "current_user",
             name = "Guest Traveler",
-            email = "guest@safejourney.ai",
+            email = "",
+            phone = "",
+            avatar = "",
             userId = "guest_user"
         )
         userProfileDao.createProfile(profile)
@@ -241,9 +272,11 @@ class AuthRepositoryImpl(
 
     override suspend fun updateProfile(name: String, email: String, phone: String, photoUrl: String): Result<UserProfileEntity> {
         val current = (_authState.value as? AuthState.Authenticated)?.profile
+            ?: userProfileDao.getProfileSync()
             ?: UserProfileEntity(id = "current_user", name = name, email = email, phone = phone, avatar = photoUrl)
 
         val updated = current.copy(
+            id = "current_user",
             name = name,
             email = email,
             phone = phone,
@@ -263,7 +296,7 @@ class AuthRepositoryImpl(
                         "displayName" to name,
                         "email" to email,
                         "phone" to phone,
-                        "photoUrl" to photoUrl,
+                        "photoUrl" to updated.avatar,
                         "updatedAt" to System.currentTimeMillis()
                     )
                 )

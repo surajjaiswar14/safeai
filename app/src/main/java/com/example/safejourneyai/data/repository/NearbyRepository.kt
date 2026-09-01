@@ -34,8 +34,9 @@ class NearbyRepositoryImpl : NearbyRepository {
                   node["amenity"="police"](around:5000, $lat, $lng);
                   node["amenity"="pharmacy"](around:5000, $lat, $lng);
                   node["amenity"="clinic"](around:5000, $lat, $lng);
+                  node["amenity"="fire_station"](around:5000, $lat, $lng);
                 );
-                out body 15;
+                out body 20;
             """.trimIndent()
 
             val url = URL("https://overpass-api.de/api/interpreter")
@@ -71,6 +72,7 @@ class NearbyRepositoryImpl : NearbyRepository {
                         "hospital", "clinic" -> "Hospitals"
                         "police" -> "Police"
                         "pharmacy" -> "Pharmacy"
+                        "fire_station" -> "Fire Station"
                         else -> "Tourist Desk"
                     }
 
@@ -116,12 +118,13 @@ class NearbyRepositoryImpl : NearbyRepository {
     }
 
     private fun getFallbackNearbyServices(lat: Double, lng: Double, city: String): List<NearbyHelpItem> {
-        val cityName = if (city.isNotBlank()) city else "Local"
+        val cityName = if (city.isNotBlank() && city != "Current Location") city else "Local Area"
         return listOf(
-            NearbyHelpItem("f1", "$cityName City General Hospital", "Hospitals", "Central Ward Road, $cityName", 0.8, "800 m", "+91 22 2654 3200", lat + 0.005, lng + 0.005),
-            NearbyHelpItem("f2", "$cityName Central Police Station", "Police", "Station Road, $cityName", 1.2, "1.2 km", "+91 22 2262 0111", lat + 0.008, lng - 0.004),
+            NearbyHelpItem("f1", "$cityName City General Hospital", "Hospitals", "Central Medical Road, $cityName", 0.8, "800 m", "+91 22 2654 3200", lat + 0.005, lng + 0.005),
+            NearbyHelpItem("f2", "$cityName Central Police Station", "Police", "Station Road, $cityName", 1.2, "1.2 km", "100", lat + 0.008, lng - 0.004),
             NearbyHelpItem("f3", "$cityName 24/7 Apollo Pharmacy", "Pharmacy", "Main Market Plaza, $cityName", 0.4, "400 m", "1800 102 0304", lat - 0.003, lng + 0.002),
-            NearbyHelpItem("f4", "Tourist Safety & Assistance Desk", "Tourist Desk", "Airport & Railway Control, $cityName", 2.1, "2.1 km", "1363", lat + 0.015, lng + 0.012)
+            NearbyHelpItem("f4", "$cityName Main Fire Station", "Fire Station", "Civil Lines, $cityName", 1.5, "1.5 km", "101", lat + 0.010, lng + 0.006),
+            NearbyHelpItem("f5", "Tourist Safety & Assistance Desk", "Tourist Desk", "Control Room, $cityName", 2.1, "2.1 km", "1363", lat + 0.015, lng + 0.012)
         )
     }
 

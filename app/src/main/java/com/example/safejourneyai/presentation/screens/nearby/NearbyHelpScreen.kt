@@ -181,7 +181,7 @@ fun NearbyHelpScreen(
 
                     // Category Filter Row
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val cats = listOf("All", "Hospitals", "Police", "Pharmacy", "Tourist Desk")
+                        val cats = listOf("All", "Hospitals", "Police", "Pharmacy", "Fire Station", "Tourist Desk")
                         items(cats) { cat ->
                             FilterChip(
                                 selected = selectedCategory == cat,
@@ -228,6 +228,7 @@ fun NearbyHelpScreen(
                                                 "Hospitals" -> Icons.Filled.LocalHospital
                                                 "Police" -> Icons.Filled.LocalPolice
                                                 "Pharmacy" -> Icons.Filled.LocalPharmacy
+                                                "Fire Station" -> Icons.Filled.LocalFireDepartment
                                                 else -> Icons.Filled.Place
                                             },
                                             contentDescription = null,
