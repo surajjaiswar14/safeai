@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +50,7 @@ fun HomeScreen(
     popularDestinations: List<Destination>,
     onToggleSimulationMode: (Boolean) -> Unit = {},
     onSelectSimulationScenario: (Int) -> Unit = {},
+    onToggleSaveDestination: (String) -> Unit = {},
     onNavigateSearch: () -> Unit,
     onNavigateDestination: (String) -> Unit,
     onNavigateNearbyHelp: () -> Unit,
@@ -281,7 +283,10 @@ fun HomeScreen(
                     Text(
                         text = "Search destination or ask AI",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -359,7 +364,7 @@ fun HomeScreen(
                     DestinationCard(
                         destination = dest,
                         onCardClick = { onNavigateDestination(dest.id) },
-                        onSaveClick = { },
+                        onSaveClick = { onToggleSaveDestination(dest.id) },
                         modifier = Modifier.width(220.dp)
                     )
                 }

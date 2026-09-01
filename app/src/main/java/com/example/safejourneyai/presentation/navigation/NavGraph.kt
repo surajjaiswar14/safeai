@@ -290,6 +290,7 @@ fun SafeJourneyNavGraph(
                     popularDestinations = allDestinations,
                     onToggleSimulationMode = { mainViewModel.setSimulationModeEnabled(it) },
                     onSelectSimulationScenario = { mainViewModel.setSimulationScenario(it) },
+                    onToggleSaveDestination = { id -> destinationViewModel.toggleSave(id) },
                     onNavigateSearch = { navController.navigate(ScreenRoute.Search.route) },
                     onNavigateDestination = { id -> navController.navigate(ScreenRoute.DestinationDetails.createRoute(id)) },
                     onNavigateNearbyHelp = { navController.navigate(ScreenRoute.NearbyHelp.route) },

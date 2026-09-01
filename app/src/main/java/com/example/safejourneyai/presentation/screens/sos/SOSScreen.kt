@@ -6,6 +6,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -106,9 +108,9 @@ fun SOSScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 80.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Location Disclaimer Banner
             Surface(
@@ -326,6 +328,8 @@ fun SOSScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Bottom Reset Button
             if (isActivated) {
