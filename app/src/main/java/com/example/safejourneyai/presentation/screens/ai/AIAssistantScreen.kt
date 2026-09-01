@@ -72,7 +72,6 @@ fun AIAssistantScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text("SafeJourney AI", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text("Your Travel Safety Companion", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 },

@@ -23,11 +23,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.safejourneyai.data.repository.LocationRepositoryImpl
+import com.example.safejourneyai.data.repository.LocationState
+import com.example.safejourneyai.data.repository.UserLocation
 import com.example.safejourneyai.presentation.theme.PrimaryBlue
 import com.example.safejourneyai.presentation.theme.SOSRed
 import com.example.safejourneyai.presentation.theme.SOSRedLight
 import com.example.safejourneyai.presentation.theme.SafetyGreen
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,10 +43,13 @@ fun SOSScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val locationRepository = remember { LocationRepositoryImpl(context) }
+
     var isActivated by remember { mutableStateOf(false) }
     var isCountingDown by remember { mutableStateOf(false) }
     var countdownSeconds by remember { mutableIntStateOf(5) }
-    var statusMessage by remember { mutableStateOf("") }
+    var currentLocation by remember { mutableStateOf<UserLocation?>(null) }
+    var statusMessage by remember { mutableStateOf("Emergency assistance options active. Select an action below to proceed.") }
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
@@ -61,7 +70,22 @@ fun SOSScreen(
             }
             isActivated = true
             isCountingDown = false
-            statusMessage = "Emergency assistance options active. Select an action below to proceed."
+        }
+    }
+
+    // Continuous Real-Time SOS Location Updates
+    LaunchedEffect(isActivated) {
+        if (isActivated) {
+            while (isActivated) {
+                val state = locationRepository.fetchCurrentLocation()
+                if (state is LocationState.Success) {
+                    currentLocation = state.location
+                    statusMessage = "LIVE LOCATION ACTIVE • ${state.location.getDisplayName()} (${String.format("%.4f", state.location.latitude)}, ${String.format("%.4f", state.location.longitude)})"
+                } else {
+                    statusMessage = "LIVE SOS ACTIVE • Waiting for GPS signal..."
+                }
+                delay(3000)
+            }
         }
     }
 
@@ -212,12 +236,19 @@ fun SOSScreen(
                         context.startActivity(intent)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    SOSActionButton("Share SOS Location Link", Icons.Filled.Share, PrimaryBlue) {
+                    SOSActionButton("Share Live SOS Location Link", Icons.Filled.Share, PrimaryBlue) {
+                        val loc = currentLocation
+                        val timeStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+                        val shareText = if (loc != null) {
+                            "SafeJourneyAI LIVE SOS ALERT!\nLive Location: https://maps.google.com/?q=${loc.latitude},${loc.longitude}\nAddress: ${loc.getDisplayName()}\nCoordinates: ${loc.latitude}, ${loc.longitude}\nTimestamp: $timeStr\nPlease send emergency assistance immediately!"
+                        } else {
+                            "SafeJourneyAI LIVE SOS ALERT!\nEmergency broadcast active at $timeStr. Please send emergency assistance immediately!"
+                        }
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "SafeJourneyAI SOS Alert: Emergency location broadcast initiated. Location: Jaipur (26.9124 N, 75.7873 E). Please assist.")
+                            putExtra(Intent.EXTRA_TEXT, shareText)
                         }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share Location Alert"))
+                        context.startActivity(Intent.createChooser(shareIntent, "Share Live Location Alert"))
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     SOSActionButton("Nearest Help (Hospitals & Police)", Icons.Filled.LocalHospital, PrimaryBlue) {

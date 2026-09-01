@@ -60,11 +60,6 @@ fun ExploreScreen(
                             text = "Explore India",
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                         )
-                        Text(
-                            text = "Verified Safety Context & Guides",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 },
                 actions = {

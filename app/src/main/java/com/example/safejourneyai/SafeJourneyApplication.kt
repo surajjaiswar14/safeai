@@ -1,4 +1,4 @@
-package com.example.safejourneyai
+ package com.example.safejourneyai
 
 import android.app.Application
 import android.content.Context

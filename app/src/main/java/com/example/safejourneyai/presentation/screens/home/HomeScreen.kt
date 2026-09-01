@@ -25,20 +25,15 @@ import com.example.safejourneyai.data.model.Destination
 import com.example.safejourneyai.presentation.components.*
 import com.example.safejourneyai.presentation.theme.*
 import androidx.compose.runtime.remember
-import java.util.Calendar
-
-@Composable
-fun rememberTimeBasedGreeting(): String {
-    return remember {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        when (hour) {
-            in 5..11 -> "Good morning"
-            in 12..16 -> "Good afternoon"
-            in 17..20 -> "Good evening"
-            else -> "Good night"
-        }
-    }
-}
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +53,95 @@ fun HomeScreen(
     onNavigateSOS: () -> Unit,
     onNavigateAI: () -> Unit
 ) {
+    val context = LocalContext.current
+    val locationManager = remember { context.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager }
+    
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var isGpsEnabled by remember {
+        mutableStateOf(
+            locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+            locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+        )
+    }
+    var showRationaleDialog by remember { mutableStateOf(!hasLocationPermission) }
+    var showGpsDialog by remember { mutableStateOf(hasLocationPermission && !isGpsEnabled) }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.values.any { it }
+        hasLocationPermission = granted
+        showRationaleDialog = false
+        if (granted) {
+            val gpsOk = locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                    locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+            isGpsEnabled = gpsOk
+            showGpsDialog = !gpsOk
+        }
+    }
+
+    // Permission Rationale Dialog
+    if (showRationaleDialog && !hasLocationPermission) {
+        AlertDialog(
+            onDismissRequest = { showRationaleDialog = false },
+            title = { Text("Location Access Required", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Allow location access to find nearby places, provide accurate travel information, and share your location during SOS.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    }
+                ) {
+                    Text("Allow Access")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRationaleDialog = false }) {
+                    Text("Not Now")
+                }
+            }
+        )
+    }
+
+    // GPS Turn-On Dialog
+    if (showGpsDialog && hasLocationPermission && !isGpsEnabled) {
+        AlertDialog(
+            onDismissRequest = { showGpsDialog = false },
+            title = { Text("Turn On Location (GPS)", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Location services (GPS) are currently turned off. Please turn on location to find nearby emergency services and enable real-time safety tracking.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showGpsDialog = false
+                        val intent = android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text("Turn On Location")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGpsDialog = false }) {
+                    Text("Not Now")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -80,22 +164,13 @@ fun HomeScreen(
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            val greeting = rememberTimeBasedGreeting()
-                            Text(
-                                text = "$greeting, $userName",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
+                        Text(
+                            text = userName,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
                             )
-                            Text(
-                                text = if (simulationModeEnabled) "SIMULATION MODE ACTIVE" else "SafeJourneyAI Active Protection",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (simulationModeEnabled) PrimaryTeal else MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        )
                     }
                 },
                 actions = {
@@ -191,47 +266,14 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Search a destination or ask a question...",
+                        text = "Search destination or ask AI",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Location Opt-In Status Indicator
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                color = if (tripModeEnabled || simulationModeEnabled) SafetyGreen.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (tripModeEnabled || simulationModeEnabled) Icons.Filled.LocationOn else Icons.Filled.LocationOff,
-                        contentDescription = null,
-                        tint = if (tripModeEnabled || simulationModeEnabled) SafetyGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = when {
-                            simulationModeEnabled -> "Simulation Active: Telemetry & real-time travel zone safety simulated."
-                            tripModeEnabled -> "Trip Mode Active: Real-time region advisories enabled."
-                            else -> "Location sharing: Off unless SOS is triggered or Trip Mode is enabled."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Hero Banner Card
             HeroBannerCard(
@@ -243,8 +285,7 @@ fun HomeScreen(
 
             // Quick Actions Section
             SectionHeader(
-                title = "Quick Actions",
-                subtitle = "Essential travel safety utilities"
+                title = "Quick Actions"
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -292,7 +333,6 @@ fun HomeScreen(
             // Popular Destinations Header
             SectionHeader(
                 title = "Recommended Destinations",
-                subtitle = "Verified safety context & advisories",
                 actionText = "Explore All",
                 onActionClick = onNavigateSearch
             )
@@ -316,8 +356,7 @@ fun HomeScreen(
 
             // Trending Advisories
             SectionHeader(
-                title = "Live Safety Advisories",
-                subtitle = "Informative updates — no tourist restrictions"
+                title = "Live Safety Advisories"
             )
 
             Spacer(modifier = Modifier.height(10.dp))

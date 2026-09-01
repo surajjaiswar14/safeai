@@ -59,9 +59,8 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SettingsCategoryHeader("Privacy & Emergency")
+            SettingsCategoryHeader("Privacy & Security")
             SettingsClickableItem("Privacy & Permissions", "Location & Data Policy", Icons.Filled.Security, onNavigatePrivacy)
-            SettingsClickableItem("Emergency Contacts", "Configure SOS Dispatch", Icons.Filled.ContactPhone, onNavigateEmergencyContacts)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -74,10 +73,10 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("SafeJourneyAI Native Android", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text("Version 1.0.0 (Build 100)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Version 1.0.0", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Built 100% natively with Kotlin, Jetpack Compose, Material 3, Room, and DataStore.",
+                        "Native Android travel protection & emergency assistance.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium

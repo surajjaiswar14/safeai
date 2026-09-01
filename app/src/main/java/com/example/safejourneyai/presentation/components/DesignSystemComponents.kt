@@ -33,9 +33,9 @@ import com.example.safejourneyai.presentation.theme.*
 @Composable
 fun HeroBannerCard(
     title: String = "SafeJourneyAI",
-    tagline: String = "Travel Smart. Travel Safe.",
-    subtitle: String = "AI-powered travel safety insights for India.",
-    philosophy: String = "We inform & contextualize — we never tell you not to go.",
+    tagline: String = "",
+    subtitle: String = "",
+    philosophy: String = "",
     buttonText: String = "Ask SafeJourneyAI",
     onButtonClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -130,24 +130,26 @@ fun HeroBannerCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                if (tagline.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = tagline,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
 
-                Text(
-                    text = tagline,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                if (subtitle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.9f)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Button(
                     onClick = onButtonClick,

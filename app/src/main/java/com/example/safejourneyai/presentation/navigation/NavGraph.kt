@@ -376,7 +376,11 @@ fun SafeJourneyNavGraph(
             // 13. Emergency Contacts Screen
             composable(ScreenRoute.EmergencyContacts.route) {
                 EmergencyContactsScreen(
-                    onNavigateBack = { navController.navigateUp() }
+                    onNavigateBack = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(ScreenRoute.Home.route)
+                        }
+                    }
                 )
             }
 
